@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+Based on the postgres_queries_ plugin from http://samuel.github.com/python-munin/
+
+Plugin to monitor a Fritz!Box DSL modem parameters.
+"""
+
+import sys
+sys.path.append('/export/home/jmbreuer/Developer/python-munin')
+
+from munin.fritz import MuninFritzPlugin
+
+class MuninFritzDSLPlugin(MuninFritzPlugin):
+    # args = "--base 1000"
+    vlabel = "DSL CPE parameters"
+    info = "DSL CPE parameters"
+
+    field_types = (
+        ('cpe_los', dict(
+            label = "# Loss of Signal",
+            info = "# Loss of Signal",
+            type = "DERIVE",
+            row = 16,
+            column = 1
+        )),
+        ('cpe_lof', dict(
+            label = "# Loss of Frame",
+            info = "# Loss of Frame",
+            type = "DERIVE",
+            row = 16,
+            column = 2
+        )),
+        ('cpe_fec', dict(
+            label = "# Forward Error Corrections",
+            info = "# Forward Error Corrections",
+            type = "DERIVE",
+            row = 16,
+            column = 3
+        )),
+        ('cpe_crc', dict(
+            label = "# CRC errors",
+            info = "# Cyclic Redundancy Check errors",
+            type = "DERIVE",
+            row = 16,
+            column = 4
+        )),
+        ('cpe_ncd', dict(
+            label = "# No Cell Delineation",
+            info = "# No Cell Delineation",
+            type = "DERIVE",
+            row = 16,
+            column = 5
+        )),
+        ('cpe_hec', dict(
+            label = "# Header Error Corrections",
+            info = "# Header Error Corrections",
+            type = "DERIVE",
+            row = 16,
+            column = 6
+        )),
+    )
+
+    @property
+    def title(self):
+        return "Fritz!Box DSL CPE parameters on %s" % self.hostname
+
+    @property
+    def fields(self):
+        return [
+            (k, dict(
+                    label = v['label'],
+                    info = v['info'],
+                    type = v['type'],
+                    min = "0",
+                )) for k, v in self.field_types]
+
+    def execute(self):
+        table = self.gettable('adsl.html')
+        keys = [(k, v['row'], v['column']) for k, v in self.field_types]
+        values = {}
+        for k, row, column in keys:
+	  values[k] = int(table[row]('td')[column].text)
+	return values
+
+if __name__ == "__main__":
+    MuninFritzDSLPlugin().run()
