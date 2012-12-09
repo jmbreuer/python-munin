@@ -4,29 +4,19 @@
 """
 Based on the postgres_queries_ plugin from http://samuel.github.com/python-munin/
 
-Plugin to monitor a Fritz!Box DSL modem parameters.
+Plugin to monitor IPv4 host ping latencies
 """
 
 import sys
 sys.path.append('/export/home/jmbreuer/Developer/python-munin')
 
+import os
+import string
 from munin.ping import MuninPingPlugin
 
 class MuninPingprobePlugin(MuninPingPlugin):
     vlabel = "Ping latencies"
     info = "Ping latencies"
-
-    field_types = (
-        ('jb-fo_dyndns_org', dict(
-            host = "jb-fo.dyndns.org",
-        )),
-        ('proxy_nefonline_de', dict(
-            host = "proxy.nefonline.de",
-        )),
-        ('www_google_com', dict(
-            host = "www.google.com",
-        )),
-    )
 
     @property
     def title(self):
@@ -35,20 +25,20 @@ class MuninPingprobePlugin(MuninPingPlugin):
     @property
     def fields(self):
         return [
-            (k, dict(
-                    label = v['host'],
-                    info = v['host'],
+            (string.replace(e, ".", "_"), dict(
+                    label = e,
+                    info = e,
                     type = "GAUGE",
                     min = "0"
-                )) for k, v in self.field_types]
+                )) for e in string.split(os.environ.get('ping_hosts', "localhost"), " ")]
 
     def execute(self):
-        keys = [(k, v['host']) for k, v in self.field_types]
+        keys = [(host, v['info']) for host, v in self.fields]
         values = {}
-        for k, host in keys:
+        for key, host in keys:
 	  p = self.getPing(host)
 	  p.run(3)
-	  values[k] = p.stat_avg()
+	  values[key] = p.stat_avg()
 	return values
 
 if __name__ == "__main__":
