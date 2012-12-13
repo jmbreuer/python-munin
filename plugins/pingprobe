@@ -7,10 +7,13 @@ Based on the postgres_queries_ plugin from http://samuel.github.com/python-munin
 Plugin to monitor IPv4 host ping latencies
 """
 
-import sys
-sys.path.append('/export/home/jmbreuer/Developer/python-munin')
+# Add our surrounding modules to the module path
+import os, sys, inspect
+# realpath() will make the path absolute and deal with symlinks
+module_folder =  os.path.split(os.path.split(os.path.realpath(inspect.getfile(inspect.currentframe())))[0])[0]
+if module_folder not in sys.path:
+  sys.path.insert(0, module_folder)
 
-import os
 import string
 from munin.ping import MuninPingPlugin
 
