@@ -6,6 +6,66 @@ import sys
 import socket
 from decimal import Decimal
 
+class MuninMultiGraphPlugin(object):
+    graphs = []
+    
+    def __init__(self):
+        super(MuninMultiGraphPlugin, self).__init__()
+
+    def autoconf(self):
+        return False
+
+    def config(self):
+        conf = []
+        for gn in self.graphs:
+	  g = self.graphs[gn]
+          if (len(self.graphs) > 1):
+            conf.append('multigraph %s' % gn)
+          for k in ('title', 'category', 'args', 'vlabel', 'info', 'scale', 'order'):
+	    if k in g:
+	      v = g[k]
+              if isinstance(v, bool):
+                v = v and "yes" or "no"
+              elif isinstance(v, (tuple, list)):
+                v = " ".join(v)
+              conf.append('graph_%s %s' % (k, v))
+
+          for field_name, field_args in g['fields']:
+            for arg_name, arg_value in field_args.iteritems():
+              conf.append('%s.%s %s' % (field_name, arg_name, arg_value))
+
+        print "\n".join(conf)
+
+    def suggest(self):
+        sys.exit(1)
+
+    def run(self):
+        cmd =  ((len(sys.argv) > 1) and sys.argv[1] or None) or "execute"
+        if cmd == "execute":
+            values = self.execute()
+            if values:
+                for gn, vs in values.items():
+		  if (len(self.graphs) > 1):
+		    print 'multigraph %s' % gn
+		  for k, v in vs.items():
+                    print "%s.value %s" % (k, v)
+        elif cmd == "autoconf":
+            try:
+                ac = self.autoconf()
+            except Exception, exc:
+                print "no (%s)" % str(exc)
+                sys.exit(1)
+            if not ac:
+                print "no"
+                sys.exit(1)
+            print "yes"
+        elif cmd == "config":
+            self.config()
+        elif cmd == "suggest":
+            self.suggest()
+        sys.exit(0)
+
+
 class MuninPlugin(object):
     title = ""
     args = None

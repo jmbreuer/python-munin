@@ -18,30 +18,45 @@ import string
 from munin.ping import MuninPingPlugin
 
 class MuninPingprobePlugin(MuninPingPlugin):
-    vlabel = "Ping latencies"
-    info = "Ping latencies"
-
-    @property
-    def title(self):
-        return "IPv4 ping latencies"
-
-    @property
-    def fields(self):
-        return [
-            (string.replace(e, ".", "_"), dict(
+  
+    def __init__(self):
+      self.hosts = string.split(os.environ.get('ping_hosts', "localhost"), " ")
+      fields = [(string.replace(e, ".", "_"), dict(
                     label = e,
                     info = e,
                     type = "GAUGE",
                     min = "0"
-                )) for e in string.split(os.environ.get('ping_hosts', "localhost"), " ")]
+                )) for e in self.hosts]
+      self.graphs = { 
+        'pingprobe_rtt': {
+	  'category': self.category,
+	  'fields': fields,
+	  'title': "Ping RTT", 
+          'vlabel': "Ping RTT",
+          'info': "Ping RTT" },
+	'pingprobe_loss': {
+	  'category': self.category,
+	  'fields': fields,
+	  'title': "Ping Loss",
+	  'vlabel': "Ping Loss",
+	  'info': "Ping Loss" }
+        }
+
 
     def execute(self):
-        keys = [(host, v['info']) for host, v in self.fields]
-        values = {}
-        for key, host in keys:
+        count = 10
+        raw = {}
+        for host in self.hosts:
 	  p = self.getPing(host)
-	  p.run(3)
-	  values[key] = p.stat_avg()
+	  p.run(count)
+	  raw[host] = {'pingprobe_rtt': p.stat_avg(), 'pingprobe_loss': count - p.stat_rcvd()}
+
+        values = {}
+        for gn in self.graphs:
+	    gv = {}
+            for host in self.hosts:
+	      gv[(string.replace(host, ".", "_"))] = raw[host][gn]
+	    values[gn] = gv
 	return values
 
 if __name__ == "__main__":

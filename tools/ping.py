@@ -87,9 +87,10 @@ def to_ip(addr):
 
 
 class Ping(object):
-    def __init__(self, destination, timeout=1000, packet_size=55, out=True, own_id=None):
+    def __init__(self, destination, timeout=1000, interval=1000, packet_size=55, out=True, own_id=None):
         self.destination = destination
         self.timeout = timeout
+        self.interval = interval
         self.packet_size = packet_size
         self.out = out
         if own_id is None:
@@ -162,6 +163,9 @@ class Ping(object):
 	    return self.total_time / self.receive_count
 	else:
 	    return -1
+
+    def stat_rcvd(self):
+	return self.receive_count
     
     #--------------------------------------------------------------------------
 
@@ -206,9 +210,9 @@ class Ping(object):
             if delay == None:
                 delay = 0
 
-            # Pause for the remainder of the MAX_SLEEP period (if applicable)
-            if (MAX_SLEEP > delay):
-                time.sleep((MAX_SLEEP - delay) / 1000.0)
+            # Pause for the remainder of the interval period (if applicable)
+            if (self.interval > delay):
+                time.sleep((self.interval - delay) / 1000.0)
 	if self.out:
 	    self.print_exit()
 
@@ -223,7 +227,7 @@ class Ping(object):
                 # Operation not permitted - Add more information to traceback
                 etype, evalue, etb = sys.exc_info()
                 evalue = etype(
-                    "%s - Note that ICMP messages can only be send from processes running as root." % evalue
+                    "%s - Note that ICMP messages can only be sent from processes running as root." % evalue
                 )
                 raise etype, evalue, etb
             raise # raise the original error
